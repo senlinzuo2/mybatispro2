@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.nfu.server.Myselect">
+<select id="getUsers" resultType="cn.nfu.pojo.User">
+    select * from user
+</select>
+    <insert id="myinsert" parameterType="User">
+          insert into user(name,pass) value(#{name},#{pass})
+    </insert>
+<!--    int myInsert(HashMap map);-->
+    <insert id="myInsert">
+        insert into user(name,pass) value (#{nn1},#{pp1})
+    </insert>
+
+   <!-- HashMap selectMap(int id);-->
+    <select id="selectMap" resultType="map">
+        select id,name,pass from user where id = #{id}
+    </select>
+
+   <!-- User selectUser1(int id);-->
+    <select id="selectUser1" resultType="cn.nfu.pojo.User1">
+        select id userid,name username,pass userpass from user where id=#{id}
+    </select>
+
+    <resultMap id="sss" type="cn.nfu.pojo.User1">
+        <id property="userid" column="uid"/>
+        <result property="username" column="name" />
+        <result property="userpass" column="pass" />
+    </resultMap>
+
+    <select id="selectUsermap" resultMap="sss">
+        select id uid ,name ,pass  from user where id=#{id}
+    </select>
+
+   <!-- Student selectStudent(int id);-->
+
+    <resultMap id="selectstudentmap" type="cn.nfu.pojo.Student">
+        <!--sid | name  | pass | did | did | dname-->
+        <id property="id" column="sid"/>
+        <result property="name" column="name"/>
+        <result property="pass" column="pass" />
+        <result property="did" column="did"/>
+        <association property="dept" javaType="cn.nfu.pojo.Dept">
+            <result property="did" column="did" />
+            <result property="dname" column="dname"/>
+       </association>
+    </resultMap>
+
+    <select id="selectStudent" resultMap="selectstudentmap">
+        select s.id sid,s.name,s.pass,s.did,d.did,d.dname from student s,dept d where s.did = d.did and s.id=1;
+    </select>
+
+<!--    Student selectStudent1(int id);-->
+    <!--Dept deptbydid(int did);-->
+    <select id="deptbydid" resultType="cn.nfu.pojo.Dept">
+        select did,dname from dept where did=#{did}
+    </select>
+
+    <resultMap id="selectstudentmap1" type="cn.nfu.pojo.Student">
+        <!--sid | name  | pass | did | did | dname-->
+        <id property="id" column="sid"/>
+        <result property="name" column="name"/>
+        <result property="pass" column="pass" />
+        <result property="did" column="did"/>
+        <!--Dept对象-->
+        <association property="dept" select="cn.nfu.server.Myselect.deptbydid" column="did">
+            <result property="did" column="did" />
+            <result property="dname" column="dname"/>
+        </association>
+    </resultMap>
+
+    <select id="selectStudent1" resultMap="selectstudentmap1">
+        select id sid,name,pass,did from student where id=#{id}
+    </select>
+
+   <!-- Dept getDeptStudent(int did);-->
+
+    <resultMap id="getDeptStudentmap" type="cn.nfu.pojo.Dept1">
+        <result property="did" column="did" javaType="int"/>
+        <result property="dname" column="dname" javaType="string"/>
+        <collection property="liststus" ofType="cn.nfu.pojo.Student1">
+            <id property="sid" column="sid" />
+            <result property="sname" column="name" />
+            <result property="pass" column="pass" />
+            <result property="did" column="did" />
+        </collection>
+    </resultMap>
+
+
+ <!--   | id | did | dname    | id | name  | pass | did-->
+    <select id="getDeptStudent" resultMap="getDeptStudentmap">
+         select d.*,s.id sid,s.name,s.pass from dept d,student s where s.did=d.did and d.did=#{did};
+    </select>
+
+
+   <!-- 分步1对多的查询
+    1.查部门表  select did,dname from dept where did=1
+    2.查部门中的学生   select * from student where did=?-->
+    <resultMap id="xxxx" type="cn.nfu.pojo.Dept1">
+        <result property="did" column="did" javaType="int"/>
+        <result property="dname" column="dname" javaType="string"/>
+        <collection property="liststus" select="cn.nfu.server.Myselect.studentById" column="did">
+            <id property="sid" column="sid" />
+            <result property="sname" column="sname" />
+            <result property="pass" column="spass" />
+            <result property="did" column="did" />
+        </collection>
+    </resultMap>
+
+
+    <select id="deptbydid1" resultMap="xxxx">
+        select did,dname from dept where did=#{did}
+    </select>
+    <select id="studentById" resultType="cn.nfu.pojo.Student1">
+        select id sid,name sname,pass spass,did from student where did=#{did}
+    </select>
+
+    <!--ArrayList<User>  getUser(String name,String pass);-->
+
+    <resultMap id="getusermap" type="cn.nfu.pojo.User">
+         <id property="id" column="id1"/>
+         <result property="name" column="name1"/>
+         <result property="pass" column="pass1"/>
+         <discriminator javaType="String" column="pass1">
+             <case value="123" resultType="cn.nfu.pojo.User">
+                 <result property="pass" column="name1"/>
+             </case>
+             <case value="root" resultType="cn.nfu.pojo.User">
+                 <result property="pass" column="id1"/>
+             </case>
+         </discriminator>
+    </resultMap>
+
+    <select id="getUser" resultMap="getusermap">
+       select  id id1,name name1,pass pass1 from user
+    </select>
+
+<!--    ArrayList<User> getDyUser(String name,String pass);-->
+
+
+      <select id="getDyUser" resultType="cn.nfu.pojo.User">
+          select id,name,pass from user
+   <!--       <trim prefix="where" suffixOverrides="and |or" prefixOverrides="and |or">-->
+   <where>
+          <if test="name1 != null">
+              and name = #{name1}
+          </if>
+          <if test="pass1 != null">
+              and pass = #{pass1}
+          </if>
+   </where>
+    <!--  </trim>-->
+      </select>
+
+
+</mapper>
+
